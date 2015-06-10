@@ -1,5 +1,5 @@
 import glob
-from datetime import datetime, time
+from datetime import datetime, time, timedelta
 import re
 
 
@@ -47,7 +47,7 @@ def find_last_run(log):
     for name in glob.glob(eudaq_log_dir):
         logs.append(name)
     logs = sorted(logs)
-    logfile = open(logs[-1],'r')
+    logfile = open(logs[-1], 'r')
     ind = -1
     while True:
         data = logfile.readlines()[ind].split("\t")
@@ -97,7 +97,7 @@ def search_log(log, run, info):
             if len(info["stop time"]) > 1:
                 count = True
                 look_for_stop = False
-            elif data[1].startswith(end_tag)  and look_for_stop:
+            elif data[1].startswith(end_tag) and look_for_stop:
                 break
             if count:
                 stop_loop += 1
@@ -173,7 +173,7 @@ def find_rate(tag, data, info):
             rate = []
         if len(rate) > 4:
             rate[1] = rate[1].lower().strip("k")
-            info["raw rate"] = int(rate[1]) if not "." in rate[1] else int(float(rate[1])*1e3)
+            info["raw rate"] = int(rate[1]) if not "." in rate[1] else int(float(rate[1]) * 1e3)
             info["prescaled rate"] = int(rate[2])
             info["to TLU rate"] = int(rate[3])
             info["pulser accept rate"] = int(rate[4])
@@ -228,6 +228,7 @@ def find_run(tag, data, info):
             print "user entered no specific run data"
     return info
 
+
 def find_run_info(tag, data, info):
     dia = data[1].replace("(", " ").replace(")", " ").replace(":", " ")
     dia = dia.replace(";", " ").replace(",", " ").split()
@@ -245,8 +246,8 @@ def find_run_info(tag, data, info):
         if dia[11].startswith("quad"):
             if dia[12].startswith("sett"):
                 del dia[12]
-            dia.insert(11,dia[15])
-            dia.insert(11,dia[15])
+            dia.insert(11, dia[15])
+            dia.insert(11, dia[15])
     if len(dia) > 5:
         if "ramp" in dia[5]:
             del dia[6]
@@ -256,8 +257,9 @@ def find_run_info(tag, data, info):
         else:
             info["run info"] = data[1].lstrip(tag).lstrip(":").strip()
     else:
-            info["run info"] = data[1].lstrip(tag).lstrip(":").strip()
+        info["run info"] = data[1].lstrip(tag).lstrip(":").strip()
     return dia
+
 
 def find_comments(data, info):
     if data[0] == "USER" and not data[1].startswith("Run 1") and not "masked pixels in" in data[1]:
@@ -318,6 +320,7 @@ def calc_flux(pixels, rate):
         flux = int(round(flux, 0))
     return flux
 
+
 def copy_last_run(test, run, runs):
     test["diamond 1"] = runs[convert_run(run - 1)]["diamond 1"]
     test["diamond 2"] = runs[convert_run(run - 1)]["diamond 2"]
@@ -330,3 +333,59 @@ def copy_last_run(test, run, runs):
     test["configuration"] = runs[convert_run(run - 1)]["configuration"]
     test["mask"] = runs[convert_run(run - 1)]["mask"]
     test["masked pixels"] = runs[convert_run(run - 1)]["masked pixels"]
+
+
+def get_persons(test, begin, date):
+    shifts = {
+        "PSI_May15": [
+            ["2015-05-23", "12", "21", "Felix // Micha"],
+            ["2015-05-24", "12", "21", "Felix // Micha"],
+            ["2015-05-25", "12", "21", "Felix // Micha"],
+            ["2015-05-26", "12", "21", "Gregor // Micha"],
+            ["2015-05-27", "12", "21", "Felix // Harris // Micha"],
+            ["2015-05-28", "12", "21", "Ben // Harris // Micha"],
+            ["2015-05-29", "12", "21", "Felix // Ben // Harris // Micha"],
+            ["2015-05-30", "12", "21", "Felix // Harris // Micha"],
+            ["2015-05-31", "12", "21", "Felix // Harris // Micha"],
+
+            ["2015-05-23", "21", "04", "Gregor // Marc"],
+            ["2015-05-24", "21", "04", "Gregor // Marc // Steve"],
+            ["2015-05-25", "21", "04", "Gregor // Marc // Steve"],
+            ["2015-05-26", "21", "04", "William // Marc // Steve"],
+            ["2015-05-27", "21", "04", "William // Steve"],
+            ["2015-05-28", "21", "04", "Marc // William // Steve"],
+            ["2015-05-29", "21", "04", "Marc // Gregor // Steve"],
+            ["2015-05-30", "21", "02", "Gregor // Steve"],
+            ["2015-05-31", "02", "04", "Dmitry // Steve"],
+            ["2015-05-31", "21", "01", "Felix // Steve"],
+            ["2015-06-01", "01", "04", "Dmitry // Steve"],
+
+            ["2015-05-24", "04", "12", "Dmitry // Christian"],
+            ["2015-05-25", "04", "12", "Dmitry // Christian"],
+            ["2015-05-26", "04", "12", "Dmitry // Christian"],
+            ["2015-05-27", "04", "12", "Dmitry // Christian"],
+            ["2015-05-28", "04", "12", "Dmitry // Christian"],
+            ["2015-05-29", "04", "12", "Dmitry // Christian"],
+            ["2015-05-30", "04", "12", "Dmitry // Christian"],
+            ["2015-05-31", "04", "10", "Dmitry // Christian"],
+            ["2015-05-31", "10", "12", "Christian // Micha"],
+            ["2015-06-01", "04", "08", "Dmitry // Christian"],
+        ]}
+    if begin == "none":
+        persons = "none"
+    else:
+        start = datetime.strptime(date + " " + begin, "%m/%d/%Y %H:%M:%S")
+        right_shift = ""
+        for i in range(len(shifts[test])):
+            start_shift = shifts[test][i][0] + " " + shifts[test][i][1]
+            start_shift = datetime.strptime(start_shift, "%Y-%m-%d %H")
+            if int(shifts[test][i][1]) < int(shifts[test][i][2]):
+                end_shift = shifts[test][i][0] + " " + shifts[test][i][2]
+                end_shift = datetime.strptime(end_shift, "%Y-%m-%d %H")
+            else:
+                end_shift = shifts[test][i][0] + " " + shifts[test][i][2]
+                end_shift = datetime.strptime(end_shift, "%Y-%m-%d %H") + timedelta(days=1)
+            if start > start_shift and start < end_shift:
+                right_shift = i
+        persons = shifts[test][right_shift][3]
+    return persons

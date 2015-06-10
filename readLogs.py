@@ -14,7 +14,8 @@ if args.run != "0":
     print "Information for run:", args.run
 
 arguments = OrderedDict(
-    [("run info", "none"),
+    [("persons on shift", "none"),
+     ("run info", "none"),
      ("type", "none"),
      ("configuration", "none"),
      ("mask", "none"),
@@ -89,6 +90,7 @@ for run in range(start, stop):
 
     test["aimed flux"] = functions.get_flux("PSI_May15", test["fs11"], test["fsh13"])
     test["measured flux"] = functions.calc_flux(test["masked pixels"], test["raw rate"])
+    test["persons on shift"] = functions.get_persons("PSI_May15",test["start time"], test["begin date"])
 
     if test != arguments:
         runs[functions.convert_run(str(run))] = test

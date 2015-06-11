@@ -2,6 +2,10 @@ import glob
 from datetime import datetime, time, timedelta
 import re
 
+# ====================================
+# BASIC HELPER FUNCTIONS
+# ====================================
+
 
 # converts the entered run number
 def convert_run(number):
@@ -39,6 +43,30 @@ def find_file(log, run):
     return filename
 
 
+# find the first run
+def find_first_run(logfilename):
+    eudaq_log_dir = str(logfilename) + "2015-*"
+    logs = []
+    first_run = "0"
+    start_tag = "Starting Run 1505"
+    for name in glob.glob(eudaq_log_dir):
+        logs.append(name)
+    logs = sorted(logs)
+    for log in logs:
+        logfile = open(log, 'r')
+        for line in logfile:
+            data = line.split("\t")
+            if len(data) > 1:
+                if data[1].startswith(start_tag):
+                    first_run = data[1].split()[2].strip(":")
+                    break
+        if len(first_run) > 1:
+            break
+        logfile.close()
+    first_run = int(str(first_run)[4:])
+    return first_run
+
+
 # find the last run
 def find_last_run(log):
     eudaq_log_dir = str(log) + "2015-*"
@@ -61,7 +89,34 @@ def find_last_run(log):
     return last_run
 
 
-# loop over logs
+# convert time to hours:minutes:seconds
+def make_time(string):
+    date_time = datetime.strptime(string, "%Y-%m-%d %H:%M:%S.%f").strftime("%H:%M:%S")
+    return date_time
+
+
+# unificate diamond style styles
+def make_dia_nice(string):
+    dia = string.replace("-", "").lower()
+    last = dia[-1].upper()
+    if dia[0] == "p":
+        dia = dia[:-1]
+        dia = dia + "-" + last
+    if dia.startswith("ii"):
+        dia = dia.strip("i")
+        dia = "II-" + dia[0] + "-" + dia[1:3]
+    if dia.startswith("s"):
+        dia = dia.upper()
+    if len(dia) == 2 and dia.isalnum():
+        dia = "II-6-" + dia
+    return dia
+
+
+# ====================================
+# SEARCHING THE LOGFILE
+# ====================================
+
+# find the date in the logfile
 def search_log(log, run, info):
     found_start = False
     look_for_start = True
@@ -125,11 +180,9 @@ def search_log(log, run, info):
     return info
 
 
-# convert time
-def make_time(string):
-    date_time = datetime.strptime(string, "%Y-%m-%d %H:%M:%S.%f").strftime("%H:%M:%S")
-    return date_time
-
+# ====================================
+# SINGLE FINDING FUNCTIONS
+# ====================================
 
 def find_time(tag, data, info, key):
     if data[1].startswith(tag):
@@ -173,7 +226,7 @@ def find_rate(tag, data, info):
             rate = []
         if len(rate) > 4:
             rate[1] = rate[1].lower().strip("k")
-            info["raw rate"] = int(rate[1]) if not "." in rate[1] else int(float(rate[1]) * 1e3)
+            info["raw rate"] = int(rate[1]) if "." not in rate[1] else int(float(rate[1]) * 1e3)
             info["prescaled rate"] = int(rate[2])
             info["to TLU rate"] = int(rate[3])
             info["pulser accept rate"] = int(rate[4])
@@ -262,31 +315,20 @@ def find_run_info(tag, data, info):
 
 
 def find_comments(data, info):
-    if data[0] == "USER" and not data[1].startswith("Run 1") and not "masked pixels in" in data[1]:
-        if not "rate" in data[1] and not "/" in data[1]:
-            if not "Successfully read" in data[1] and not "to USB" in data[1]:
-                if not "scope output" in data[1] and not "pxar v" in data[1]:
+    if data[0] == "USER" and not data[1].startswith("Run 1") and "masked pixels in" not in data[1]:
+        if "rate" not in data[1] and "/" not in data[1]:
+            if "Successfully read" not in data[1] and "to USB" not in data[1]:
+                if "scope output" not in data[1] and "pxar v" not in data[1]:
                     info["user comments"] += data[1] + " // "
     return info
 
 
-# unificate diamond style styles
-def make_dia_nice(string):
-    dia = string.replace("-", "").lower()
-    last = dia[-1].upper()
-    if dia[0] == "p":
-        dia = dia[:-1]
-        dia = dia + "-" + last
-    if dia.startswith("ii"):
-        dia = dia.strip("i")
-        dia = "II-" + dia[0] + "-" + dia[1:3]
-    if dia.startswith("s"):
-        dia = dia.upper()
-    if len(dia) == 2 and dia.isalnum():
-        dia = "II-6-" + dia
-    return dia
+# ====================================
+# CALCULATE INFOS FROM DATA
+# ====================================
 
 
+# map certain shutter values to the aimed flux
 def get_flux(test, fs11, fsh13):
     flux = {
         "PSI_May15": {
@@ -311,6 +353,7 @@ def get_flux(test, fs11, fsh13):
     return flux
 
 
+# calculate the flux from rate and number of masked pixels
 def calc_flux(pixels, rate):
     area = ((80 * 52 - pixels) * 15e-5)
     flux = rate / area / 1e3
@@ -321,6 +364,7 @@ def calc_flux(pixels, rate):
     return flux
 
 
+# copy some date from the last run
 def copy_last_run(test, run, runs):
     test["diamond 1"] = runs[convert_run(run - 1)]["diamond 1"]
     test["diamond 2"] = runs[convert_run(run - 1)]["diamond 2"]
@@ -335,6 +379,7 @@ def copy_last_run(test, run, runs):
     test["masked pixels"] = runs[convert_run(run - 1)]["masked pixels"]
 
 
+# compare start of the run with the shift table and find out the person that ought have been on shift
 def get_persons(test, begin, date):
     shifts = {
         "PSI_May15": [
@@ -385,7 +430,7 @@ def get_persons(test, begin, date):
             else:
                 end_shift = shifts[test][i][0] + " " + shifts[test][i][2]
                 end_shift = datetime.strptime(end_shift, "%Y-%m-%d %H") + timedelta(days=1)
-            if start > start_shift and start < end_shift:
+            if start_shift < start < end_shift:
                 right_shift = i
         persons = shifts[test][right_shift][3]
     return persons

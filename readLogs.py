@@ -15,6 +15,8 @@ parser = argparse.ArgumentParser()
 default_logs = "eudaq_logs/"
 parser.add_argument("-l", "--logfile", nargs='?', default=default_logs, help="enter the filepath of the Keithley-log")
 parser.add_argument("-r", "--run", nargs='?', default="-1", help="enter the runnumber without date information")
+parser.add_argument("-a", "--all", action='store_true', help="enter -a to run for every run")
+parser.add_argument("-f", "--jsonfile", nargs='?', default='runs_PSI_August_2015.json', help="enter the file you want to read")
 args = parser.parse_args()
 
 
@@ -76,13 +78,30 @@ def_dict = OrderedDict(
 # ====================================
 start = 0
 stop = 0
-if not run_mode:
+data = None
+if args.all:
     start = functions.find_first_run(args.logfile)
     stop = functions.find_last_run(args.logfile) + 1
 elif run_mode:
     start = int(args.run) - 1
     stop = start + 2
+else:
+    f = open(args.jsonfile, 'r+')
+    data = json.load(f, object_pairs_hook=OrderedDict)
+    f.close()
+    last_run = None
+    for run in data:
+        last_run = run
+    last_run = int(str(last_run)[4:])
+    stop = functions.find_last_run(args.logfile)
+    start  = last_run + 1
 
+print 'starting at run:', start
+print 'stopping at run:', stop
+
+if start > stop:
+    print "There is nothing to do! All runs are already included"
+    exit()
 
 # ====================================
 # LOOP OVER ALL RUNS
@@ -95,9 +114,8 @@ tags = []
 for key in def_dict:
     tags.append(key)
 
-for run in range(start, stop):
+for run in range(start, stop + 1):
 
-    print run
     # copy the default log_dict
     log_dict = def_dict.copy()
 
@@ -135,7 +153,11 @@ for run in range(start, stop):
 
     # save only the runs where any value differs from default
     if log_dict != def_dict:
-        runs[functions.convert_run(str(run))] = log_dict
+        if args.all or run_mode:
+            runs[functions.convert_run(str(run))] = log_dict
+        else:
+            data[functions.convert_run(str(run))] = log_dict
+
     else:
         print "there are no information for this run"
 
@@ -148,8 +170,11 @@ for run in range(start, stop):
 # ====================================
 # save json to file
 if not run_mode:
-    f = open(filename, 'w')
-    f.write(json.dumps(runs, indent=4))
+    f = open(filename, 'r+')
+    if not args.all:
+        f.write(json.dumps(data, indent=4))
+    else:
+        f.write(json.dumps(runs, indent=4))
     print "save rundata in file:", filename
     f.close()
 

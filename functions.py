@@ -70,7 +70,6 @@ def find_first_run(logfilename):
 # find the last run
 def find_last_run(log):
     eudaq_log_dir = str(log) + "2015-*"
-    print eudaq_log_dir
     logs = []
     last_run = 0
     for name in glob.glob(eudaq_log_dir):
@@ -80,7 +79,6 @@ def find_last_run(log):
     ind = -1
     while True:
         data = logfile.readlines()[ind].split("\t")
-        print data
         if len(data) > 1:
             if data[1].startswith("Stopping"):
                 last_run = data[1].split()[2]

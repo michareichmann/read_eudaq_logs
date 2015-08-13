@@ -1,3 +1,12 @@
 #ignore temp files and python byte code
 *~
 *.pyc
+.*
+
+#ignore json files
+*.json
+
+#ignore logs
+eudaq_logs/
+
+getLogs.sh

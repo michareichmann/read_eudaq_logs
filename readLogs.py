@@ -12,7 +12,7 @@ from collections import OrderedDict
 # PARSER
 # ====================================
 parser = argparse.ArgumentParser()
-default_logs = "eudaq_logs/"
+default_logs = "../eudaq-drs4/logs/"
 parser.add_argument("-l", "--logfile", nargs='?', default=default_logs, help="enter the filepath of the Keithley-log")
 parser.add_argument("-r", "--run", nargs='?', default="-1", help="enter the runnumber without date information")
 parser.add_argument("-a", "--all", action='store_true', help="enter -a to run for every run")
@@ -170,7 +170,7 @@ for run in range(start, stop + 1):
 # ====================================
 # save json to file
 if not run_mode:
-    f = open(filename, 'r+')
+    f = open(filename, 'w')
     if not args.all:
         f.write(json.dumps(data, indent=4))
     else:

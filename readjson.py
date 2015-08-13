@@ -20,6 +20,9 @@ f = open(filename, 'r')
 data = json.load(f, object_pairs_hook=OrderedDict)
 
 
+
+
+
 def convert_to_min(x):
     event = x.hour*60 + x.minute + float(x.second)/60
     return event
@@ -45,6 +48,9 @@ if args.run != "0":
 
 length_run = []
 for run in range(first_run,last_run + 1):
+    bla =functions.convert_run(run)
+    # pr[functions.convert_run(run)][args.info]
+
     start = data[functions.convert_run(run)]["start time"]
     stop = data[functions.convert_run(run)]["stop time"]
     try:
@@ -54,20 +60,23 @@ for run in range(first_run,last_run + 1):
         continue
     start = convert_to_min(start)
     stop = convert_to_min(stop)
-    if stop > start:
-        diff = stop - start
-    else:
-        diff = 24*60 - start + stop
-    length_run.append(diff)
+    # print start
+    if stop - start > 20:
+        print run, data[bla]["measured flux"]
 
-# print length_run
-c = ROOT.TCanvas("c", "run-length", 700, 300)
-low = min(length_run)
-high = max(length_run)
-h = ROOT.TH1F("h", "length", 300, 0, 50)
-# h.SetBit(ROOT.TH1.kCanRebin)
-for i in length_run:
-    h.Fill(i)
-h.Draw()
-raw_input()
+    #     diff = stop - start
+    # else:
+    #     diff = 24*60 - start + stop
+    # length_run.append(diff)
+
+# # print length_run
+# c = ROOT.TCanvas("c", "run-length", 700, 300)
+# low = min(length_run)
+# high = max(length_run)
+# h = ROOT.TH1F("h", "length", 300, 0, 50)
+# # h.SetBit(ROOT.TH1.kCanRebin)
+# for i in length_run:
+#     h.Fill(i)
+# h.Draw()
+# raw_input()
 

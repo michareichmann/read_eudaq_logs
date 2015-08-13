@@ -15,11 +15,11 @@ def convert_run(number):
         print "The entered run number has to be lesser then 1000"
         exit()
     elif number >= 100:
-        run_number = "150500" + str(number)
+        run_number = "150800" + str(number)
     elif number >= 10:
-        run_number = "1505000" + str(number)
+        run_number = "1508000" + str(number)
     else:
-        run_number = "15050000" + str(number)
+        run_number = "15080000" + str(number)
     return run_number
 
 
@@ -48,7 +48,7 @@ def find_first_run(logfilename):
     eudaq_log_dir = str(logfilename) + "2015-*"
     logs = []
     first_run = "0"
-    start_tag = "Starting Run 1505"
+    start_tag = "Starting Run 1508"
     for name in glob.glob(eudaq_log_dir):
         logs.append(name)
     logs = sorted(logs)
@@ -70,6 +70,7 @@ def find_first_run(logfilename):
 # find the last run
 def find_last_run(log):
     eudaq_log_dir = str(log) + "2015-*"
+    print eudaq_log_dir
     logs = []
     last_run = 0
     for name in glob.glob(eudaq_log_dir):
@@ -79,9 +80,11 @@ def find_last_run(log):
     ind = -1
     while True:
         data = logfile.readlines()[ind].split("\t")
-        if data[1].startswith("Stopping"):
-            last_run = data[1].split()[2]
-            break
+        print data
+        if len(data) > 1:
+            if data[1].startswith("Stopping"):
+                last_run = data[1].split()[2]
+                break
         logfile.seek(0)
         ind -= 1
     logfile.close()
@@ -191,7 +194,7 @@ def find_time(tag, data, info, key):
 
 
 def find_current(tag, data, info, key):
-    if data[1].startswith(tag):
+    if data[1].startswith(tag) and not data[1].startswith(tag + ' too'):
         current = float(data[1].split()[2][:-2])
         info[key] = current
     return info

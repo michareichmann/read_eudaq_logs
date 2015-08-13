@@ -12,14 +12,14 @@ from collections import OrderedDict
 # PARSER
 # ====================================
 parser = argparse.ArgumentParser()
-default_logs = "../readkeithleycurrent/eudaq_logs/"
+default_logs = "eudaq_logs/"
 parser.add_argument("-l", "--logfile", nargs='?', default=default_logs, help="enter the filepath of the Keithley-log")
 parser.add_argument("-r", "--run", nargs='?', default="-1", help="enter the runnumber without date information")
 args = parser.parse_args()
 
 
 # name of the file you want to create
-filename = "runs_PSI_May_2015.json"
+filename = "runs_PSI_August_2015.json"
 
 # set run_mode
 run_mode = True
@@ -131,7 +131,7 @@ for run in range(start, stop):
     log_dict["measured flux"] = functions.calc_flux(log_dict["masked pixels"], log_dict["raw rate"])
 
     # find persons that were on shift when the run was started
-    log_dict["persons on shift"] = functions.get_persons("PSI_May15", log_dict["start time"], log_dict["begin date"])
+    # log_dict["persons on shift"] = functions.get_persons("PSI_May15", log_dict["start time"], log_dict["begin date"])
 
     # save only the runs where any value differs from default
     if log_dict != def_dict:

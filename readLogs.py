@@ -12,11 +12,12 @@ from collections import OrderedDict
 # PARSER
 # ====================================
 parser = argparse.ArgumentParser()
-default_logs = "../eudaq-drs4/logs/"
+default_logs = '/home/testbeam/sdvlp/eudaq-drs4/logs/'
+default_json = '/home/testbeam/sdvlp/eudaqLogReader/runs_PSI_August_2015.json'
 parser.add_argument("-l", "--logfile", nargs='?', default=default_logs, help="enter the filepath of the Keithley-log")
 parser.add_argument("-r", "--run", nargs='?', default="-1", help="enter the runnumber without date information")
 parser.add_argument("-a", "--all", action='store_true', help="enter -a to run for every run")
-parser.add_argument("-f", "--jsonfile", nargs='?', default='runs_PSI_August_2015.json', help="enter the file you want to read")
+parser.add_argument("-f", "--jsonfile", nargs='?', default=default_json, help="enter the file you want to read")
 args = parser.parse_args()
 
 
@@ -81,7 +82,7 @@ stop = 0
 data = None
 if args.all:
     start = functions.find_first_run(args.logfile)
-    stop = functions.find_last_run(args.logfile) + 1
+    stop = functions.find_last_run(args.logfile)
 elif run_mode:
     start = int(args.run) - 1
     stop = start + 2
